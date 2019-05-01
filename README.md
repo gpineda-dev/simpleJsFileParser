@@ -1,2 +1,2 @@
 # simpleJsFileParser
-a simple js library to handle multiple files format (JSON) for eml.meta, WekanBord ..
+a simple js library to handle multiple files format (JSON) for eml.meta, WekanBoard ..
