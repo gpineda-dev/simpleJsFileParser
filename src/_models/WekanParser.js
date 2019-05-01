@@ -7,17 +7,9 @@ class WekanParser {
      * @description from a given file
      * @param {File} file File object member of Listfiles (provided by input type=file)
      */
-    static loadfromFile(file){
-        return new Promise((resolve,reject)=>{
-            var reader = new FileReader();
-            reader.readAsText(file);
-            reader.onload = function(e) {
-            console.log("// create a new WeKanParser");
-            resolve(new WekanParser(e.target.result));
-        };
-
-        })
-        
+    async static loadfromFile(file){
+        let content = await utils.loadfromFile(file)
+        return new WekanParser(content);        
     }
 
     constructor (_WekanJSON){
@@ -84,14 +76,12 @@ class WekanParser {
     CardsfromUser(username){
         console.log("searching cards from .. ",username);
         let uid = where(this.users,[["username","=",username]])[0]._id;
-        //let madebyUid = join(this.users,this.cards,"_id","userId")
         let madebyUid = where(this.cards,[['userId','=',uid]]);
         return madebyUid;
         console.table(madebyUid);
     }
 
     toString(){
-        console.log("HERE");
         return JSON.stringify(this._WekanJSON,null,"\t");
     }
     
