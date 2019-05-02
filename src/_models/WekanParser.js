@@ -1,6 +1,9 @@
 const { project, where } = require('../_helpers/jsonExtractor');
 const utils = require('../helpers/utils');
 
+/**
+ * @description Class for a WekanBoard Model (only entity and not Bundle of WekanBoards)
+ */
 class WekanParser {
 
     /**
@@ -12,6 +15,10 @@ class WekanParser {
         return new WekanParser(content);        
     }
 
+    /**
+     * @description instanciate a new parser from a given WekanBoard as JSON format
+     * @param {JSON} _WekanJSON 
+     */
     constructor (_WekanJSON){
         _WekanJSON = JSON.parse(_WekanJSON);           //Load from a JSON file
         console.log("This is a new WekanParser");
@@ -33,6 +40,9 @@ class WekanParser {
         console.log("Built object",this._WekanJSON);
     }
 
+    /**
+     * @description Getter with fields _id and username
+     */
     get Users(){
         return project(this.users,["_id","username"]);
     }
@@ -45,6 +55,9 @@ class WekanParser {
         return this.cards;
     } 
 
+    /**
+     * @description Transform methode
+     */
     convertCards(){
         return this._cards.map(_e=>{
             _e.customFields.forEach(__e=>{
@@ -72,15 +85,20 @@ class WekanParser {
         return Object.keys(this[category]);
     }
 
-
+    /**
+     * @description return all cards made by <username>
+     * @param {string} username 
+     */
     CardsfromUser(username){
         console.log("searching cards from .. ",username);
         let uid = where(this.users,[["username","=",username]])[0]._id;
         let madebyUid = where(this.cards,[['userId','=',uid]]);
         return madebyUid;
-        console.table(madebyUid);
     }
 
+    /**
+     * 
+     */
     toString(){
         return JSON.stringify(this._WekanJSON,null,"\t");
     }
