@@ -1,5 +1,3 @@
-
-
 /**
  * @description extract fileContent from a File Object
  * @returns {Promise} fileContent (text) as Promise handler
@@ -17,3 +15,11 @@ function loadFromFile(file){
     })
 }
 
+/**
+ * @description extract matching words with the provided pattern
+ * @param {string} myString 
+ * @param {regex} pattern 
+ */
+function extractPattern(myString, pattern){
+
+}
