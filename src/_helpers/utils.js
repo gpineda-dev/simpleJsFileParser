@@ -23,3 +23,6 @@ function loadFromFile(file){
 function extractPattern(myString, pattern){
 
 }
+
+exports.loadFromFile = loadFromFile;
+exports.extractPattern = extractPattern;

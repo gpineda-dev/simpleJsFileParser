@@ -1,5 +1,5 @@
 const { project, where } = require('../_helpers/jsonExtractor');
-const utils = require('../helpers/utils');
+const utils = require('../_helpers/utils');
 
 /**
  * @description Class for a EmlMeta Model (only entity and not Bundle of EmlMetas)
@@ -24,6 +24,7 @@ class EmlMetaParser {
         this.subject = _EmlMetaJSON.subject;
         this.content = _EmlMetaJSON.content;
         this.sender  = _EmlMetaJSON.sender;
+        this.delay   = parseDelay();
         console.log("This is a new _EmlMetaJSON");
 
         //extract Members / Users / Header(Meta) / lists / customFields / Cards / 
@@ -31,6 +32,14 @@ class EmlMetaParser {
         
         console.log("Built object",this._EmlMetaJSON);
     }
+
+    //internal methods to format the eml file with Meta
+    parseDelay(){
+        let pattern = "<TPS_([^>])+>";
+        let matchingTag = utils.extractPattern(this.metadata,pattern);
+        return (matchingTag.length > 0 ? matchingTag[0].split("_")[0] : None)
+    }
+
 
     /**
      * @description Getter with fields _id and username
@@ -48,28 +57,13 @@ class EmlMetaParser {
     } 
 
     get delay(){
-        return 0; //will returned correction time from a specific tag
+        return this.delay;
     }    
 
     //When initialized ..
-    getTitles(category){
-        console.log("getTitles of : ",category)
-            return project(this[category],["title"]);
-    }
 
     getKeys(category){
         return Object.keys(this[category]);
-    }
-
-    /**
-     * @description return all cards made by <username>
-     * @param {string} username 
-     */
-    CardsfromUser(username){
-        console.log("searching cards from .. ",username);
-        let uid = where(this.users,[["username","=",username]])[0]._id;
-        let madebyUid = where(this.cards,[['userId','=',uid]]);
-        return madebyUid;
     }
 
     /**
