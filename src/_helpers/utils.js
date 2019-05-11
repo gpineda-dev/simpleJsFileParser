@@ -18,10 +18,10 @@ function loadFromFile(file){
 /**
  * @description extract matching words with the provided pattern
  * @param {string} myString 
- * @param {regex} pattern 
+ * @param {Regex} pattern 
  */
 function extractPattern(myString, pattern){
-
+    return [];
 }
 
 exports.loadFromFile = loadFromFile;

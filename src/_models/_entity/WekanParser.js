@@ -1,4 +1,4 @@
-const { project, where } = require('../_helpers/jsonExtractor');
+const { project, where } = require('../../_helpers/jsonExtractor');
 const utils = require('../helpers/utils');
 
 /**
