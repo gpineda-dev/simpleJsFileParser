@@ -5,11 +5,11 @@
  */
 
 EmlMetaBundle = require('./_models/_bundle/EmlMetaBundle');
-Utils         = require('./_helpers/utils');
-JsonExtractor = require('./_helpers/jsonExtractor')
+EmlExchange = require('./_models/_entity/EmlExchange');
+_Helpers = require('./_helpers/');
 
 module.exports = {
     EmlMetaBundle: EmlMetaBundle,
-    Utils: Utils,
-    JsonExtractor : JsonExtractor
+    EmlExchange: EmlExchange,
+    _Helpers : _Helpers
 }

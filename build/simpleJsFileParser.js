@@ -1,4 +1,17 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+/**
+ * @description entrypoint _helpers
+ *
+ */
+
+Utils         = require('./utils');
+JsonExtractor = require('./jsonExtractor')
+
+module.exports = {
+    Utils: Utils,
+    JsonExtractor : JsonExtractor
+}
+},{"./jsonExtractor":2,"./utils":3}],2:[function(require,module,exports){
 /*
  * This lib is done to apply junctions .. select on JSON .. require Jquery
  */
@@ -55,7 +68,7 @@ function join(json1,json2,field1,field2){
  * @description split a JsonArray from a provided field
  * @param {Array<JSON>} json 
  * @param {string} field 
- * @return {Array<JSON>} Array of JSON, record = {key: valueOfKey, data: matchingArray}
+ * @return {Array<JSON>} Array<{key: valueOfKey, data: matchingArray}>
  */
 function splitBy(json,field){
     let to_return = [];
@@ -73,16 +86,36 @@ function splitBy(json,field){
             groupedValues.push(key);
         }
     })
-
-    return to_return;
+    console.log(`groupedValues : ${groupedValues}`);
+    return {total: json.length, data: to_return};
 }
+
+
+/**
+ * @description order an array of jsonArray by field asc(1)/desc(-1)
+ * @param {Array<JSON>} jsonArray array of Json to sort
+ * @param {string} field pivot
+ * @param {tinyint} order asc(1) / desc(-1), default: 1
+ */
+function orderBy(jsonArray=[{}],field,order=1){
+    //check if field in Array !
+    let _fields = Object.keys(jsonArray[0]);
+    if(_fields.includes(field)) 
+    {
+        return jsonArray.sort((record1,record2)=>{ return order*(record1[field]-record2[field]); })
+    }
+    throw new Error(`orderBy : unknown field : ${field} in ${_fields}`);
+
+}
+
 
 
 exports.join = join;
 exports.where = where;
 exports.project = project;
 exports.splitBy = splitBy;
-},{}],2:[function(require,module,exports){
+exports.orderBy = orderBy;
+},{}],3:[function(require,module,exports){
 /**
  * @description extract fileContent from a File Object
  * @returns {Promise} fileContent (text) as Promise handler
@@ -111,8 +144,10 @@ function extractPattern(myString, pattern){
 
 exports.loadFromFile = loadFromFile;
 exports.extractPattern = extractPattern;
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 const {EmlMetaParser} = require('../_entity/EmlMetaParser');
+const {JsonExtractor} = require('../../_helpers/');
+const EmlExchange   = require('../_entity/EmlExchange');
 
 /**
  * @description a bundle object to handle and manage sets of EmlMeta objects
@@ -121,10 +156,16 @@ class EmlMetaBundle {
     
     constructor(){
         this.sets = {};
+        
     }
 
     hasSet(destination){
-        return Array.isArray(this.sets[destination]);
+        if(typeof this.sets[destination] !== "object"){return false}
+        if(!Array.isArray(this.sets[destination].EmlMeta)){return false}
+        if(typeof this.sets[destination].EmlExchanges !== "object"){return false}
+        if(typeof this.sets[destination].EmlExchanges.total !== "number"){return false}
+        if(!Array.isArray(this.sets[destination].EmlExchanges.records)){return false}
+        return true;
     }
     
 
@@ -136,24 +177,112 @@ class EmlMetaBundle {
         let resolvedTemp = await Promise.all(temp)
         this.appendToSet(resolvedTemp,destination);
         console.log(this.sets);
-        return this.sets[destination];
+        return this.sets[destination].EmlMeta;
     } 
     
     appendToSet(data,destination){
         console.log(`data ${data} isArray ? ${Array.isArray(this.sets[destination])}`);
-        if(!this.hasSet(destination)){this.sets[destination] = []}
+        if(!this.hasSet(destination)){this.sets[destination] = { EmlMeta:[] , EmlExchanges: {total: 0, records: []}}}
         console.log(`isArray2 ? ${Array.isArray(this.sets[destination])}`);
 
-        this.sets[destination] = this.sets[destination].concat(data);
+        this.sets[destination].EmlMeta = this.sets[destination].EmlMeta.concat(data);
+        this.sets
     }
 
+    exchangesFromSet(destination){
+        if(!this.hasSet(destination)){ throw new Error(`Unknown set[${destination}]`)}
+        
+        if(this.sets[destination].EmlExchanges.total!=this.sets[destination].EmlMeta.length){
+            console.log("calculating .. exchanges")
+            let splitedEml = JsonExtractor.splitBy(this.sets[destination].EmlMeta,"parent_id");
+            let { total, data } = EmlExchange.fromSplitedByParentId(splitedEml);
+            
+            this.sets[destination].EmlExchanges.total = total;
+            this.sets[destination].EmlExchanges.records = data;
+        }
+
+        return this.sets[destination].EmlExchanges;
+        
+
+    }
 
 
 }
 
 
 module.exports = EmlMetaBundle;
-},{"../_entity/EmlMetaParser":4}],4:[function(require,module,exports){
+},{"../../_helpers/":1,"../_entity/EmlExchange":5,"../_entity/EmlMetaParser":6}],5:[function(require,module,exports){
+const { JsonExtractor } = require('../../_helpers/');
+
+/**
+ * @description Class for a EmlExchange Model (only entity and not Bundle of EmlMetas)
+ */
+class EmlExchange {
+
+    /**
+     * @description instanciate Array<EmlExchnage> from splited Eml by parentId
+     * @param {splitedEmls} splitedEml {total: nbTotalEmls, data: Array<splitedEml>} 
+     */
+    static fromSplitedByParentId(splitedEml){
+        let Exchanges = splitedEml.data.map((emlMeta)=>{ return new EmlExchange(emlMeta.record,emlMeta.key)})
+        return {total: splitedEml.total, data: Exchanges};
+    }
+
+    /**
+     * @description Complete eml exchange
+     * @param {Array<EmlMetaParser>} EmlMetaRecords all records of this exchange
+     * @param {integer} parent_id  
+     */
+    constructor (EmlMetaRecords,parent_id){
+      
+        //reuse _EmlMetaJson properties
+        //Object.keys(_EmlMetaJSON).forEach((key)=>{this[key] = _EmlMetaJSON[key]})
+
+        //add our own properties
+        this.raw = JsonExtractor.orderBy(EmlMetaRecords,"date"); //metas orderedBy date asc
+        this.parent_id = parent_id;
+        this.delay = this.calcDelay(); //taken time to close complete exchange
+        console.log("This is a new emlExchange");       
+        console.log("Built object",this.raw);
+    }
+
+    /**
+     * @description calculate full delay to deal with this exchange
+     */
+    calcDelay(){
+        return (this.raw[this.raw.length-1].date-this.raw[0].date);
+    }
+
+
+    /**
+     * @description Getter with fields _id and username
+     */
+    get subject(){
+        return this.raw[0].subject;
+    } 
+
+    get nb(){
+        return this.raw.length
+    }
+    /*
+    get delay(){
+        return this.delay;
+    }    */
+
+
+    /**
+     * @description overload Object toString()
+     */
+    toString(){
+        return `EmlExchange ${this.subject}, elapsed: ${this.delay}, nb: ${this.nb}`;
+    }
+    
+
+    
+}
+
+module.exports = EmlExchange;
+},{"../../_helpers/":1}],6:[function(require,module,exports){
 const { project, where } = require('../../_helpers/jsonExtractor');
 const utils = require('../../_helpers/utils');
 
@@ -178,13 +307,17 @@ class EmlMetaParser {
     constructor (_EmlMetaJSON){
         _EmlMetaJSON = JSON.parse(_EmlMetaJSON);           //Load from a JSON file
         
-        
+        //reuse _EmlMetaJson properties
+        Object.keys(_EmlMetaJSON).forEach((key)=>{this[key] = _EmlMetaJSON[key]})
+
+        //add our own properties
         this.subject = _EmlMetaJSON.subject;
         this.content = _EmlMetaJSON.content;
         this.sender  = _EmlMetaJSON.sender;
+
         //this.delay   = this.parseDelay();
         console.log("This is a new _EmlMetaJSON");
-        Object.keys(_EmlMetaJSON).forEach((key)=>{this[key] = _EmlMetaJSON[key]})
+        
         
         
         /*
@@ -229,7 +362,7 @@ class EmlMetaParser {
     //When initialized ..
 
     getKeys(category){
-        return Object.keys(this[category]);
+        return Object.keys(this);
     }
 
     /**
@@ -244,7 +377,7 @@ class EmlMetaParser {
 }
 
 exports.EmlMetaParser = EmlMetaParser;
-},{"../../_helpers/jsonExtractor":1,"../../_helpers/utils":2}],5:[function(require,module,exports){
+},{"../../_helpers/jsonExtractor":2,"../../_helpers/utils":3}],7:[function(require,module,exports){
 /**
  * @description entrypoint for this library
  * @advice      use browserify to build the library
@@ -252,12 +385,12 @@ exports.EmlMetaParser = EmlMetaParser;
  */
 
 EmlMetaBundle = require('./_models/_bundle/EmlMetaBundle');
-Utils         = require('./_helpers/utils');
-JsonExtractor = require('./_helpers/jsonExtractor')
+EmlExchange = require('./_models/_entity/EmlExchange');
+_Helpers = require('./_helpers/');
 
 module.exports = {
     EmlMetaBundle: EmlMetaBundle,
-    Utils: Utils,
-    JsonExtractor : JsonExtractor
+    EmlExchange: EmlExchange,
+    _Helpers : _Helpers
 }
-},{"./_helpers/jsonExtractor":1,"./_helpers/utils":2,"./_models/_bundle/EmlMetaBundle":3}]},{},[5]);
+},{"./_helpers/":1,"./_models/_bundle/EmlMetaBundle":4,"./_models/_entity/EmlExchange":5}]},{},[7]);
