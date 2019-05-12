@@ -21,15 +21,29 @@ class EmlMetaParser {
      */
     constructor (_EmlMetaJSON){
         _EmlMetaJSON = JSON.parse(_EmlMetaJSON);           //Load from a JSON file
+        
+        //reuse _EmlMetaJson properties
+        Object.keys(_EmlMetaJSON).forEach((key)=>{this[key] = _EmlMetaJSON[key]})
+
+        //add our own properties
         this.subject = _EmlMetaJSON.subject;
         this.content = _EmlMetaJSON.content;
         this.sender  = _EmlMetaJSON.sender;
+
         //this.delay   = this.parseDelay();
         console.log("This is a new _EmlMetaJSON");
-
+        
+        
+        
+        /*
         //extract Members / Users / Header(Meta) / lists / customFields / Cards / 
         this._EmlMetaJSON   = _EmlMetaJSON;
-        
+        */
+
+
+
+
+       
         console.log("Built object",this._EmlMetaJSON);
     }
 
@@ -63,7 +77,7 @@ class EmlMetaParser {
     //When initialized ..
 
     getKeys(category){
-        return Object.keys(this[category]);
+        return Object.keys(this);
     }
 
     /**
