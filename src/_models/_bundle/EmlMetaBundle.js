@@ -9,7 +9,11 @@ class EmlMetaBundle {
         this.sets = {};
     }
 
+    hasSet(destination){
+        return Array.isArray(this.sets[destination]);
+    }
     
+
     async addFromFiles(files,destination){
         console.log(`destination is .. ${destination}`);
         let temp = Array.from(files).map((file)=>{
@@ -23,11 +27,13 @@ class EmlMetaBundle {
     
     appendToSet(data,destination){
         console.log(`data ${data} isArray ? ${Array.isArray(this.sets[destination])}`);
-        if(!Array.isArray(this.sets[destination])){this.sets[destination] = []}
+        if(!this.hasSet(destination)){this.sets[destination] = []}
         console.log(`isArray2 ? ${Array.isArray(this.sets[destination])}`);
 
         this.sets[destination] = this.sets[destination].concat(data);
     }
+
+
 
 }
 
