@@ -1,1 +1,5 @@
 language: node_js
+
+script:
+  - npm install browserify -g
+  - ./build.sh
