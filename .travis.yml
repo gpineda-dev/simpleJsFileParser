@@ -3,4 +3,4 @@ language: node_js
 script:
   - npm install browserify -g
   - ls .
-  - browserify src/index.js -o /build/simpleJsFileParser.js
+  - browserify ./src/index.js -o ./build/simpleJsFileParser.js
