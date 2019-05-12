@@ -49,6 +49,35 @@ function join(json1,json2,field1,field2){
 }
 
 
+
+/**
+ * @description split a JsonArray from a provided field
+ * @param {Array<JSON>} json 
+ * @param {string} field 
+ * @return {Array<JSON>} Array of JSON, record = {key: valueOfKey, data: matchingArray}
+ */
+function splitBy(json,field){
+    let to_return = [];
+    let groupedValues = [];
+    json.forEach((record,index)=>{
+        let key = record[field];
+        if(!groupedValues.includes(key))
+        {
+            to_return.push({
+                key: key,
+                record: json.filter(v=>{
+                    return v[field] == key;
+                })
+            })
+            groupedValues.push(key);
+        }
+    })
+
+    return to_return;
+}
+
+
 exports.join = join;
 exports.where = where;
 exports.project = project;
+exports.splitBy = splitBy;
