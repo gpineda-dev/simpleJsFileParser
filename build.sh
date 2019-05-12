@@ -1,0 +1,1 @@
+browserify src/index.js -o build/simpleJsFileParser.js
